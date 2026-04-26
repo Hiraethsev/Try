@@ -47,6 +47,8 @@ async function getAiReply(chatId, chatType, isBackground = false) {
         messageArea.scrollTop = messageArea.scrollHeight;
     }
 
+    let cloudReplyDetached = false;
+
     try {
         let systemPrompt, requestBody;
         if (chatType === 'private') {
@@ -255,6 +257,35 @@ async function getAiReply(chatId, chatType, isBackground = false) {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${key}`
         };
+        if (!isBackground && window.AiRecovery && typeof window.AiRecovery.startCloudReply === 'function') {
+            try {
+                const cloudRequestBody = JSON.parse(JSON.stringify(requestBody));
+                if (provider !== 'gemini') {
+                    cloudRequestBody.stream = false;
+                }
+
+                const cloudEndpoint = (provider === 'gemini')
+                    ? `${url}/v1beta/models/${model}:generateContent?key=${getRandomValue(key)}`
+                    : `${url}/v1/chat/completions`;
+
+                const cloudStarted = await window.AiRecovery.startCloudReply({
+                    chatId,
+                    chatType,
+                    provider,
+                    endpoint: cloudEndpoint,
+                    headers,
+                    requestBody: cloudRequestBody
+                });
+
+                if (cloudStarted) {
+                    cloudReplyDetached = true;
+                    return;
+                }
+            } catch (cloudError) {
+                console.warn('Cloud recover handoff failed, falling back to direct request.', cloudError);
+            }
+        }
+
         const response = await fetch(endpoint, {
             method: 'POST',
             headers: headers,
@@ -305,7 +336,7 @@ async function getAiReply(chatId, chatType, isBackground = false) {
         if (!isBackground) showApiError(error);
         else console.error("Background Auto-Reply Error:", error);
     } finally {
-        if (!isBackground) {
+        if (!isBackground && !cloudReplyDetached) {
             isGenerating = false;
             getReplyBtn.disabled = false;
             regenerateBtn.disabled = false;

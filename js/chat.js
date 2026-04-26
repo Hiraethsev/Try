@@ -576,6 +576,10 @@ async function sendMessage() {
     if (currentQuoteInfo) {
         cancelQuoteReply();
     }
+
+    if (!(renameRegex.test(text) || systemRegex.test(text) || inviteRegex.test(text) || shopOrderRegex.test(text))) {
+        await getAiReply(currentChatId, currentChatType);
+    }
 }
 
 // 备份提示

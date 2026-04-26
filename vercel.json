@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/chat.mjs": {
+      "runtime": "nodejs",
+      "maxDuration": 300
+    },
+    "api/recover.mjs": {
+      "runtime": "nodejs",
+      "maxDuration": 60
+    },
+    "api/recover-ack.mjs": {
+      "runtime": "nodejs",
+      "maxDuration": 60
+    }
+  }
+}
